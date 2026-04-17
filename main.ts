@@ -155,5 +155,6 @@ scrapeCatalogImages()
   .then((imagesOfDay) => {
     console.log(`====== Here're classes of ${process.env.DAY} ======`)
     console.log(imagesOfDay)
+    console.log(`====== Total: ${imagesOfDay.length} classes on ${process.env.DAY} ======`)
   })
   .catch(console.error);
