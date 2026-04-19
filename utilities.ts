@@ -10,6 +10,9 @@ export const fetchImageAsBase64 = async (url: string) => {
   const response = await fetch(url);
   const buffer = Buffer.from(await response.arrayBuffer());
   const base64String = buffer.toString('base64');
+
+  // Qwen accepted image format
+  // https://www.alibabacloud.com/help/en/model-studio/qwen-image-edit-guide
   return `data:${response.headers.get('content-type')};base64,${base64String}`
 }
 
