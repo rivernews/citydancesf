@@ -5,17 +5,62 @@ const ACCEPTED_DAY_OF_WEEK = [
   "Thursday", "Friday", "Saturday"
 ];
 
-interface ImageModel {
-  alt?: string | null;
-  thumbnailImageUrl: string;
-  isClass: boolean;
-  link?: string | null;
-}
-
 const validateDayOfWeekInput = (dayOfWeekInput: string) => {
   return ACCEPTED_DAY_OF_WEEK.some(accepted => {
     return accepted.trim().toUpperCase() === dayOfWeekInput.trim().toUpperCase()
   })
+}
+
+const getDayOfWeekInput = () => {
+  const rawInput = (process.env.DAY as string || '').trim();
+  if (!validateDayOfWeekInput(rawInput)) {
+    throw new Error(`Day of week invalid: ${rawInput}`);
+  }
+  return rawInput;
+}
+
+const getAllQualifiedStrings = (dayOfWeek: string) => {
+  return [
+    dayOfWeek.toUpperCase(),
+    dayOfWeek.slice(0, 3).toUpperCase()
+  ];
+}
+
+const QUALIFIED_DAY_OF_WEEK_INPUT_STRINGS = getAllQualifiedStrings(getDayOfWeekInput());
+
+interface ImageModel {
+  alt?: string | null;
+  thumbnailImageUrl: string;
+  link?: string | null;
+}
+
+const getCurrentAndNextDayOfWeekIndicies = (sanitizedDayOfWeek: string) => {
+  const currentDayIndex = ACCEPTED_DAY_OF_WEEK.findIndex((accepted) => accepted.toUpperCase() === sanitizedDayOfWeek.toUpperCase());
+  const nextDayIndex = currentDayIndex + 1 === ACCEPTED_DAY_OF_WEEK.length ? 
+    0 :
+    currentDayIndex + 1;
+  
+  return [currentDayIndex, nextDayIndex];
+}
+
+const _containsDayOfWeek = (qualifiedDayOfWeekStrings: string[], text?: string | null) => {
+  return qualifiedDayOfWeekStrings.some((dayMatchString => {
+        // try to flexible-match a whole word (match FRI & FRIDAYS or even FRIDAYSSS, but not FRIDDY)
+        const altTokens = text?.trim().toUpperCase().split(/[^a-zA-Z]/);
+        console.log('altTokens', altTokens, '...matching', QUALIFIED_DAY_OF_WEEK_INPUT_STRINGS)
+        return altTokens?.some(altToken => altToken.includes(dayMatchString));
+      }))
+}
+
+const containsDayOfWeekInput = (text?: string | null) => {
+  return _containsDayOfWeek(QUALIFIED_DAY_OF_WEEK_INPUT_STRINGS, text);
+}
+
+const containsNextDayOfWeekInput = (text?: string | null) => {
+  const [, nextDayIndex] = getCurrentAndNextDayOfWeekIndicies(getDayOfWeekInput());
+  const nextDayOfWeek = ACCEPTED_DAY_OF_WEEK[nextDayIndex];
+  const qualifiedNextDayOfWeekStrings = getAllQualifiedStrings(nextDayOfWeek);
+  return _containsDayOfWeek(qualifiedNextDayOfWeekStrings, text);
 }
 
 const scrapeClassImagesOfDay = (images: ImageModel[], _dayOfWeek: string = '') => {
@@ -26,10 +71,6 @@ const scrapeClassImagesOfDay = (images: ImageModel[], _dayOfWeek: string = '') =
   console.log(`Filtering ${_dayOfWeek} classes from ${images.length} catalog items`)
 
   const dayOfWeek = _dayOfWeek?.trim();
-  const qualifiedDayStrings = [
-    dayOfWeek.toUpperCase(),
-    dayOfWeek.slice(0, 3).toUpperCase()
-  ]
 
   /**
    * Pattern: !isClass, !, isClass, isClass, ...., !isClass, 
@@ -41,50 +82,45 @@ const scrapeClassImagesOfDay = (images: ImageModel[], _dayOfWeek: string = '') =
    */
 
   let pointer = 0;
-  let firstClassPointer = -1;
-  let lastClassPointer = -1;
+  let firstDayOfWeekInputItemPointer = -1;
+  let lastDayOfWeekInputItemPointer = -1;
 
-  // find qualified day
+  // find qualified day's daily cover - first occurance is fine
+  // daily cover 99% should be the first occurance (unless an earlier catalog item mentions class takes places on 2 days, etc)
+  // AND, no link (not clickable. Daily cover never has links; some classes might not have link too)
   while (pointer < images.length) {
     const image = images[pointer];
 
-    if (!image.isClass) {
-      if (qualifiedDayStrings.some((dayMatchString => {
-        // try to match a whole word (match FRI, but not FRIDDY)
-        const altTokens = image.alt?.trim().toUpperCase().split(/[^a-zA-Z]/);
-        console.log('altTokens', altTokens, '...matching', qualifiedDayStrings)
-        return altTokens?.some(altToken => altToken === dayMatchString);
-      }))) {
-        break;
-      }
+    if (containsDayOfWeekInput(image.alt) && !image.link) {
+      // skip daily cover, go straight to next item (could be whole day aggregator, could be class w/ link, could be class w/o link)
+      firstDayOfWeekInputItemPointer = pointer + 1;
+      pointer++;
+      break;
     }
     pointer++;
   }
   console.log(`${dayOfWeek} item start from ${images[pointer]} (index=${pointer})`);
 
-  // find first class of that day
+  // find next day item
   while (pointer < images.length) {
     const image = images[pointer];
 
-    if (image.isClass) {
-      firstClassPointer = pointer;
+    if (containsNextDayOfWeekInput(image.alt) && !image.link) {
+      lastDayOfWeekInputItemPointer = pointer - 1;
       break;
     }
     pointer++;
   }
 
-  // find all classes
-  while (pointer < images.length) {
-    const image = images[pointer];
-
-    if (!image.isClass) {
-      lastClassPointer = pointer - 1;
-      break;
-    }
-    pointer++;
+  if (firstDayOfWeekInputItemPointer === -1 ||
+    lastDayOfWeekInputItemPointer === -1 ||
+    firstDayOfWeekInputItemPointer >= lastDayOfWeekInputItemPointer
+  ) {
+    throw new Error(`Abnormal pointer firstDayOfWeekInputItemPointer=${firstDayOfWeekInputItemPointer}, lastDayOfWeekInputItemPointer=${lastDayOfWeekInputItemPointer}`);
   }
 
-  return images.slice(firstClassPointer, lastClassPointer + 1);
+
+  return images.slice(firstDayOfWeekInputItemPointer, lastDayOfWeekInputItemPointer + 1);
 }
 
 /**
@@ -118,9 +154,7 @@ async function scrapeCatalogImages() {
   
   const imageResults = await Promise.allSettled(
     catalogItems.map(async (catalogItem) => {
-      const isClass = await catalogItem.evaluate(element => element.classList.contains('has-clickthrough'));
-
-      const link = await catalogItem.evaluate(eleemnt => eleemnt.querySelector('a')?.href)
+      const link = await catalogItem.evaluate(element => element.querySelector('a')?.href)
 
       const imageLocator = await catalogItem.locator('img')
       
@@ -132,7 +166,6 @@ async function scrapeCatalogImages() {
       return {
         alt,
         thumbnailImageUrl: imageSource as string,
-        isClass,
         link
       } as ImageModel;
     })
