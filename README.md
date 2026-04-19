@@ -5,7 +5,7 @@
 Specify a day of week and run:
 
 ```
-DAY=FRIDAY npm start
+DAY=FRIDAY PARALLEL_ANALYZE_IMAGE=7 npm start
 ```
 
 Please replace `DAY` by the day of week you want to search for.

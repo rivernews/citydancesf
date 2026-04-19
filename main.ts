@@ -1,4 +1,17 @@
 import { chromium } from 'playwright';
+import { exec } from "child_process";
+import { promisify } from 'util';
+// Promisify the exec function
+const execPromise = promisify(exec);
+
+interface ImageModel {
+  alt?: string | null;
+  thumbnailImageUrl: string;
+  link?: string | null;
+  thumbnailImageContent?: string;
+}
+
+const PARALLEL_ANALYZE_IMAGE = parseInt(process.env.PARALLEL_ANALYZE_IMAGE || "7");
 
 const ACCEPTED_DAY_OF_WEEK = [
   "Sunday", "Monday", "Tuesday", "Wednesday", 
@@ -28,12 +41,6 @@ const getAllQualifiedStrings = (dayOfWeek: string) => {
 
 const QUALIFIED_DAY_OF_WEEK_INPUT_STRINGS = getAllQualifiedStrings(getDayOfWeekInput());
 
-interface ImageModel {
-  alt?: string | null;
-  thumbnailImageUrl: string;
-  link?: string | null;
-}
-
 const getCurrentAndNextDayOfWeekIndicies = (sanitizedDayOfWeek: string) => {
   const currentDayIndex = ACCEPTED_DAY_OF_WEEK.findIndex((accepted) => accepted.toUpperCase() === sanitizedDayOfWeek.toUpperCase());
   const nextDayIndex = currentDayIndex + 1 === ACCEPTED_DAY_OF_WEEK.length ? 
@@ -47,7 +54,7 @@ const _containsDayOfWeek = (qualifiedDayOfWeekStrings: string[], text?: string |
   return qualifiedDayOfWeekStrings.some((dayMatchString => {
         // try to flexible-match a whole word (match FRI & FRIDAYS or even FRIDAYSSS, but not FRIDDY)
         const altTokens = text?.trim().toUpperCase().split(/[^a-zA-Z]/);
-        console.log('altTokens', altTokens, '...matching', QUALIFIED_DAY_OF_WEEK_INPUT_STRINGS)
+        // console.log('altTokens', altTokens, '...matching', QUALIFIED_DAY_OF_WEEK_INPUT_STRINGS)
         return altTokens?.some(altToken => altToken.includes(dayMatchString));
       }))
 }
@@ -182,9 +189,70 @@ async function scrapeCatalogImages() {
   return successImages;
 }
 
+async function _promisePool<T>(
+  tasks: (() => Promise<T>)[], 
+  limit: number
+): Promise<T[]> {
+  const results: T[] = [];
+  const executing = new Set<Promise<void>>();
+
+  for (const [index, task] of tasks.entries()) {
+    // Wrap task to store result and remove itself from active set upon completion
+    const p = task().then((res) => {
+      results[index] = res;
+      executing.delete(p);
+    });
+    
+    executing.add(p);
+
+    // If limit is reached, wait for at least one task to finish before starting next
+    if (executing.size >= limit) {
+      await Promise.race(executing);
+    }
+  }
+
+  // Wait for all remaining active tasks to finish
+  await Promise.all(executing);
+  return results;
+}
+
+const getAnalyzeImageCommand = (image: ImageModel) => `
+gemini -m flash-lite -p 'Extract text from image by URL at ${image.thumbnailImageUrl}. No filler words in your response, just answer the extracted text.' --output-format json --yolo | jq -r '.response'
+`.trim();
+
+const fillByImageAnalysis = (images: ImageModel[]) => {
+  console.log(`Analyzing ${images.length} classes...`)
+  return _promisePool<ImageModel>(
+    images.map((image, index) => {
+      return async () => {
+        console.log(`Started asking gemini about class ${index+1}/${images.length}`)
+        try {
+          // Increase maxBuffer to avoid errors with large output (10MB here)
+          const { stdout, stderr } = await execPromise(
+            getAnalyzeImageCommand(image),
+            { maxBuffer: 1024 * 1024 * 10 }
+          );
+
+          console.log(`--- Received class response ${index+1}/${images.length} ---`);
+          // console.log(stdout); // Contains the full response
+          image.thumbnailImageContent = (stdout as string || '').trim()
+
+          // if (stderr) console.error('--- STDERR ---\n', stderr);
+        } catch (error) {
+          console.error('Error executing gemini:', error);
+        }
+
+        return image;
+      }
+    }),
+    PARALLEL_ANALYZE_IMAGE
+  )
+}
+
 // Example usage:
 scrapeCatalogImages()
   .then((images) => scrapeClassImagesOfDay(images, process.env.DAY))
+  .then(fillByImageAnalysis)
   .then((imagesOfDay) => {
     console.log(`====== Here're classes of ${process.env.DAY} ======`)
     console.log(imagesOfDay)
