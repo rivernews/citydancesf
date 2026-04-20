@@ -7,7 +7,6 @@ gemini -m flash-lite -p 'Extract text from image by URL at ${image.thumbnailImag
 `.trim();
 
 export const fillByImageAnalysis = (images: ImageModel[]) => {
-  console.log(`Analyzing ${images.length} classes...`)
   return _promisePool<ImageModel>(
     images.map((image, index) => {
       return async () => {
@@ -20,7 +19,6 @@ export const fillByImageAnalysis = (images: ImageModel[]) => {
           );
 
           console.log(`--- Received class response ${index+1}/${images.length} ---`);
-          // console.log(stdout); // Contains the full response
           image.thumbnailImageContent = (stdout as string || '').trim()
 
           // if (stderr) console.error('--- STDERR ---\n', stderr);

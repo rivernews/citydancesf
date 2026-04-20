@@ -26,7 +26,6 @@ const _containsDayOfWeek = (qualifiedDayOfWeekStrings: string[], text?: string |
   return qualifiedDayOfWeekStrings.some((dayMatchString => {
         // try to flexible-match a whole word (match FRI & FRIDAYS or even FRIDAYSSS, but not FRIDDY)
         const altTokens = text?.trim().toUpperCase().split(/[^a-zA-Z]/);
-        // console.log('altTokens', altTokens, '...matching', QUALIFIED_DAY_OF_WEEK_INPUT_STRINGS)
         return altTokens?.some(altToken => altToken.includes(dayMatchString));
       }))
 }
@@ -43,14 +42,6 @@ const containsNextDayOfWeekInput = (text?: string | null) => {
 }
 
 const scrapeClassImagesOfDay = (images: ImageModel[], _dayOfWeek: string = '') => {
-  if (!validateDayOfWeekInput(_dayOfWeek)) {
-    throw Error('Please specific DAY=... in env var, DO NOT use abbreviation. e.g. use `friday` instead of `fri`')
-  }
-
-  console.log(`Filtering ${_dayOfWeek} classes from ${images.length} catalog items`)
-
-  const dayOfWeek = _dayOfWeek?.trim();
-
   /**
    * Pattern: !isClass, !, isClass, isClass, ...., !isClass, 
    * Consecutive !isClass -> consecutive isClass -> !isClass
@@ -78,7 +69,6 @@ const scrapeClassImagesOfDay = (images: ImageModel[], _dayOfWeek: string = '') =
     }
     pointer++;
   }
-  console.log(`${dayOfWeek} item start from ${images[pointer]} (index=${pointer})`);
 
   // find next day item
   while (pointer < images.length) {
@@ -153,8 +143,9 @@ async function scrapeCatalogImages() {
   const successImages = imageResults.filter(imageResult => imageResult.status === 'fulfilled').map((successResult) => successResult.value);
   const fails = imageResults.filter(imageResult => imageResult.status === 'rejected').map((successResult) => successResult.reason);
 
-  console.log(`Found ${successImages.length}/${imageResults.length} (success/failed) catalog images`);
-  console.error(fails);
+  if (fails.length) {
+    console.error(fails);
+  }
 
   await browser.close();
 
@@ -165,11 +156,10 @@ async function scrapeCatalogImages() {
 scrapeCatalogImages()
   .then((images) => scrapeClassImagesOfDay(images, getDayOfWeekInput()))
   // .then(fillByImageAnalysis)
-  .then((imagesOfDay) => imagesOfDay.slice(0, 1))
+  // .then((imagesOfDay) => imagesOfDay.slice(0, 1))
   .then(fillImageBase64)
   .then((imagesOfDay) => {
-    console.log(`====== Here're classes of ${getDayOfWeekInput()} ======`)
-    console.log(imagesOfDay)
-    console.log(`====== Total: ${imagesOfDay.length} classes on ${getDayOfWeekInput()} ======`)
+    // console.log(`====== Here's dance class catalog of ${getDayOfWeekInput()} ======`)
+    console.log(JSON.stringify(imagesOfDay))
   })
   .catch(console.error);
