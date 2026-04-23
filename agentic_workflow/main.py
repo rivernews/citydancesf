@@ -47,7 +47,7 @@ def extract_text_from_image_by_remote_url(url: str):
             # {"type": "text", "text": "hello how are you"},
 
             {"type": "text", "text": f'''
-Extract **Class name|instructor full name|class diificulty level|time|location|special notes**, if any, from this base64-encoded image.
+Extract **Class diificulty level|time|instructor full name|class name|location|other info**, if any, from this base64-encoded image.
             '''.strip()},
             {"type": "text", "text": '''
 For each class, output as a single line, with each value separated by delimiter "|". For example: Kpop|Switch Villa|All Levels|7:30-8:30pm|60 Brady|New Popping Class
