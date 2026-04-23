@@ -13,8 +13,20 @@ export const validateDayOfWeekInput = (dayOfWeekInput: string) => {
 
 export const getDayOfWeekInput = () => {
   const rawInput = (process.env.DAY as string || '').trim();
-  if (!validateDayOfWeekInput(rawInput)) {
-    throw new Error(`Day of week invalid: ${rawInput}`);
+
+  let relativeInput = rawInput.toLowerCase();
+  if (relativeInput === 'today' || relativeInput === 'tomorrow') {
+    const relativeInputDate = new Date();
+    if (relativeInput === 'tomorrow') {
+      relativeInputDate.setDate(relativeInputDate.getDate() + 1);
+    }
+    relativeInput = relativeInputDate.toLocaleString('en-US', { weekday: 'long' })
+  } else {
+    relativeInput = rawInput;
   }
-  return rawInput;
+
+  if (!validateDayOfWeekInput(relativeInput)) {
+    throw new Error(`Day of week invalid: ${relativeInput}`);
+  }
+  return relativeInput;
 }

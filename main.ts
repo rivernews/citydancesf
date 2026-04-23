@@ -1,7 +1,7 @@
 import { chromium } from 'playwright';
 import { ImageModel } from "./models";
-import { getDayOfWeekInput, validateDayOfWeekInput, ACCEPTED_DAY_OF_WEEK } from "./consts";
-import { fillImageBase64 } from "./utilities";
+import { getDayOfWeekInput, ACCEPTED_DAY_OF_WEEK } from "./consts";
+import { fillImageBase64, sanitizeAltText } from "./utilities";
 
 
 const getAllQualifiedStrings = (dayOfWeek: string) => {
@@ -158,6 +158,10 @@ scrapeCatalogImages()
   // .then(fillByImageAnalysis)
   // .then((imagesOfDay) => imagesOfDay.slice(0, 1))
   .then(fillImageBase64)
+  .then((imagesOfDay) => imagesOfDay.map((image: ImageModel) => {
+    image.alt = sanitizeAltText(image.alt || '');
+    return image;
+  }))
   .then((imagesOfDay) => {
     // console.log(`====== Here's dance class catalog of ${getDayOfWeekInput()} ======`)
     console.log(JSON.stringify(imagesOfDay))

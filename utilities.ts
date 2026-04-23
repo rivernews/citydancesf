@@ -10,7 +10,7 @@ import { ImageModel } from "./models";
 
 export const fetchImageAsBase64 = async (url: string) => {
   const urlObject = new URL(url)
-  urlObject.search = '';
+  urlObject.search = ''; // use full-size image
   urlObject.hash = '';
   const response = await fetch(urlObject.toString());
   let buffer: Buffer<any> = Buffer.from(await response.arrayBuffer());
@@ -62,9 +62,14 @@ export const fillImageBase64 = async (images: ImageModel[]) => {
   return await Promise.all(
       images.map(async (image) => {
       image.thumbnailImageBase64String = await fetchImageAsBase64(image.thumbnailImageUrl);
-      image.thumbnailImageUrl = '';
       delete image.link;
       return image;
     })
   )
+}
+
+// because the output might be used by another python script that relies on line-by-line parsing
+// we need to at least remove newline char
+export const sanitizeAltText = (alt: string) => {
+  return alt.replaceAll(/[\n\r]/g, '')
 }

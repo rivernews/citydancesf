@@ -1,0 +1,107 @@
+cache
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# Environments
+.env
+.env.*
+!.env.example
+.venv/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# LangChain / LLM Specifics
+# -------------------------
+# API Keys and Environment Variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Vector Databases (Local persistent storage)
+chroma/
+faiss_index/
+qdrant/
+pinecone/
+vector_store/
+*.db
+*.sqlite
+
+# Large Data & Caches
+.langchain_cache/
+data/
+inputs/
+outputs/
+*.jsonl
+*.csv
+*.parquet
+*.log
+
+# Local Models and Weights
+models/
+weights/
+*.bin
+*.pt
+*.pth
+*.ckpt
