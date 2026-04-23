@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from functools import wraps
 
 # env var
-TTL_HOURS = int(os.environ.get('TTL_HOURS', '6'))
+TTL_HOURS = int(os.environ.get('TTL_HOURS', '24'))
 FORCE_CACHE_MISS = True if os.environ.get('FORCE_CACHE_MISS', '').lower() in ('true', '1', 'yes', 'on') else False
 
 def disk_cache(func):
