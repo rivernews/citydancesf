@@ -16,7 +16,12 @@ def disk_cache(func):
       result = _read_cache(url)
       if not result:
         result = func(*args, **kwargs)
-        _write_cache(url, result)
+        if isinstance(result, str):
+          result = result.strip()
+
+        # only cache if there's a result
+        if result:
+          _write_cache(url, result)
 
       return result
   return wrapper

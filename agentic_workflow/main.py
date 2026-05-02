@@ -19,6 +19,7 @@ llm_model = ChatOpenAI(
     extra_body={
         "chat_template_kwargs": {"enable_thinking": False}
     },
+    timeout=300 # analyzing an image shouldn't take 5min
 
     # required by oMLX
     # model_name="qwen3.5-9b-fp16"
@@ -66,10 +67,12 @@ Let me know how you’d like to proceed! SCHEDLE FOR FRIDAY MAY 1
 
 '''
 @disk_cache
-@retry_on_validation(attempts=3, validate_func=lambda response: 'base64-encoded image' not in response.lower())
-def extract_text_from_image_by_remote_url(url: str, nth_retry=0):
-    print("\n\n 🏞️  Processing result(s)"+ (f" (retry {nth_retry})" if nth_retry else "") + ":")
-
+@retry_on_validation(
+    attempts=3,
+    validate_func=lambda response: response and 'base64-encoded image' not in response.lower(),
+    show_retry_log=True
+)
+def extract_text_from_image_by_remote_url(url: str):
     base64 = url_to_jpg_base64(url)
 
     ask_image_message = HumanMessage(
@@ -80,7 +83,7 @@ def extract_text_from_image_by_remote_url(url: str, nth_retry=0):
 This base64-encoded image contains some class or event information. Extract all **Class diificulty level|time|instructor full name|class name|location|other info**, if any.
             '''.strip()},
             {"type": "text", "text": '''
-For each class, output as a single line, with each value separated by delimiter "|". For example: Kpop|Switch Villa|All Levels|7:30-8:30pm|60 Brady|New Popping Class
+For each class, output as a new line, with each value separated by delimiter "|". For example: Kpop|Switch Villa|All Levels|7:30-8:30pm|60 Brady|New Popping Class
             '''.strip()},
             {
                 "type": "image_url",
