@@ -11,7 +11,8 @@ from cache_image_result import disk_cache
 llm_model = ChatOpenAI(
     openai_api_base="http://127.0.0.1:8080/v1", # Point to local server
     openai_api_key="openclaw_secure",        # Dummy key for local use
-    model_name="lmstudio-community/Qwen3.5-9B-GGUF"                  # Some servers require a placeholder name
+    model_name = "", # use endpoint default loaded model
+    # model_name="lmstudio-community/Qwen3.5-9B-GGUF"                  # Some servers require a placeholder name
     # model_name="qwen3.5-9b-fp16"                  # Some servers require a placeholder name
 )
 
@@ -89,7 +90,7 @@ for _newline in sys.stdin:
 '''Manual piped
 echo '
 
-https://images.squarespace-cdn.com/content/v1/5738b9abab48de6e3b53189b/5024890e-1c63-4c61-aaee-d4dd2b31fa52/DILLON+JULY+FLYER+25.jpg?format=500w SCHEDULE FOR MONDAY APRIL 20TH | Get your tickets to the shows this weekend!
+https://images.squarespace-cdn.com/content/v1/5738b9abab48de6e3b53189b/1091ddee-6dfb-4fb4-b9ca-811865c098d4/SILA+POE+FOR+2025+FRI.jpg?format=750w CLICK ON PIC TO SIGN UP ^ This is a great class for Beginners! Poe is a fantastic teacher!
 
 
 ' | python main.py
