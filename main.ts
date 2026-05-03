@@ -83,7 +83,8 @@ const scrapeClassImagesOfDay = (images: ImageModel[], _dayOfWeek: string = '') =
 
   if (firstDayOfWeekInputItemPointer === -1 ||
     lastDayOfWeekInputItemPointer === -1 ||
-    firstDayOfWeekInputItemPointer >= lastDayOfWeekInputItemPointer
+    firstDayOfWeekInputItemPointer >= lastDayOfWeekInputItemPointer ||
+    firstDayOfWeekInputItemPointer >= images.length
   ) {
     throw new Error(`Abnormal pointer firstDayOfWeekInputItemPointer=${firstDayOfWeekInputItemPointer}, lastDayOfWeekInputItemPointer=${lastDayOfWeekInputItemPointer}`);
   }

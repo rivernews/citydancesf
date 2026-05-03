@@ -80,10 +80,13 @@ def extract_text_from_image_by_remote_url(url: str):
             # {"type": "text", "text": "hello how are you"},
 
             {"type": "text", "text": f'''
-This base64-encoded image contains some class or event information. Extract all **Class diificulty level|time|instructor full name|class name|location|other info**, if any.
+This base64-encoded image contains some class or event information. Extract all **Class difficulty level|time|instructor full name|class name|location|other info**, if any.
             '''.strip()},
             {"type": "text", "text": '''
 For each class, output as a new line, with each value separated by delimiter "|". For example: Kpop|Switch Villa|All Levels|7:30-8:30pm|60 Brady|New Popping Class
+            '''.strip()},
+            {"type": "text", "text": '''
+Class difficulty guidance: use full word "intermediate" for int, "advance" for adv, and "beginner" for beg.
             '''.strip()},
             {
                 "type": "image_url",
