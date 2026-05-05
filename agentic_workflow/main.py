@@ -14,15 +14,15 @@ llm_model = ChatOpenAI(
     openai_api_key="openclaw_secure",        # Dummy key for local use
     
     # llama.cpp doesn't need to specify
-    model_name = "", # use endpoint default loaded model
+    # model_name = "", # use endpoint default loaded model
     # disable thinking speed up dramatically. Note that append `/no_think` at the end of prompt did not work
     extra_body={
         "chat_template_kwargs": {"enable_thinking": False}
     },
-    timeout=300 # analyzing an image shouldn't take 5min
+    timeout=300, # analyzing an image shouldn't take 5min
 
     # required by oMLX
-    # model_name="qwen3.5-9b-fp16"
+    model_name="qwen3.5-9b-fp16",
     # model_name="qwen3.5-9b"
 )
 
@@ -86,7 +86,7 @@ This base64-encoded image contains some class or event information. Extract all 
 For each class, output as a new line, with each value separated by delimiter "|". For example: Kpop|Switch Villa|All Levels|7:30-8:30pm|60 Brady|New Popping Class
             '''.strip()},
             {"type": "text", "text": '''
-Class difficulty guidance: use full word "intermediate" for int, "advance" for adv, and "beginner" for beg.
+Class difficulty guidance: use full word "intermediate" for int or INT, "advance" for adv or ADV, and "beginner" for beg or BEG.
             '''.strip()},
             {
                 "type": "image_url",
@@ -116,7 +116,10 @@ for _newline in sys.stdin:
     if not newline:
         continue
     url, alt = newline.split(' ', maxsplit=1)
+
+    print("\n\n 🏞️ Processing result(s):")
     llm_image_result = extract_text_from_image_by_remote_url(url)
+    
     print(llm_image_result + ' ' + alt.replace('|', ''))
 
 
@@ -126,7 +129,7 @@ echo '
 
 https://images.squarespace-cdn.com/content/v1/5738b9abab48de6e3b53189b/97da6a56-8795-43ad-9b9c-81f74dd4aa58/FRIDAY+NEW+TYPE+may+1.jpg SCHEDLE FOR FRIDAY MAY 1
 
-' | python main.py
+' | FORCE_CACHE_MISS=1 python main.py
 
 '''
 

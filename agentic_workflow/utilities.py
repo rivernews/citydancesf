@@ -11,7 +11,6 @@ def retry_on_validation(attempts=3, validate_func:Callable[[str], bool]=lambda x
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             last_result = ''
-            print("\n\n 🏞️ Processing result(s):")
             for attempt in range(1, attempts + 1):
                 try:
                   last_result = func(*args, **kwargs)
